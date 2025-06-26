@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ninjago Clicker</title>
+  <style>
+    body {
+      background: #0c0c0c;
+      color: #00ffcc;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      font-size: 1.5em;
+      padding: 10px 20px;
+      margin: 10px;
+      background: #111;
+      color: #00ffcc;
+      border: none;
+      border-radius: 8px;
+    }
+    .ninja-title {
+      font-size: 2em;
+      margin: 20px 0;
+      cursor: pointer;
+    }
+    .upgrade {
+      background: #222;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .upgrade:hover {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>🥷 Ninjago Clicker</h1>
+  <div class="ninja-title" id="ninjaName" onclick="countNinjaClicks()">🟢 Lloyd</div>
+  <div>Chi: <span id="chi">0</span></div>
+  <div>Chi Per Click: <span id="cpc">1</span></div>
+  <div>Chi Per Second: <span id="cps">0</span></div>
+  <button onclick="clickNinja()">TRAIN!</button>
+  <br>
+  <button onclick="prevNinja()">⬅️</button>
+  <button onclick="nextNinja()">➡️</button>
+  <h2>Upgrades</h2>
+  <div id="upgrades"></div>
+
+<script>
+let chi = 0;
+let cpc = 1;
+let cps = 0;
+let currentNinja = 0;
+let ninjaClickCount = 0;
+
+const ninjas = [
+  {
+    name: "🟢 Lloyd",
+    unlock: 0,
+    multiplier: 1,
+    upgrades: [
+      { name: "Spinjitzu Starter", type: "CPC", cost: 100, effect: 10 },
+      { name: "Energy Blade", type: "CPC", cost: 500, effect: 25 },
+      { name: "Green Boost", type: "CPC", cost: 2000, effect: 75 },
+      { name: "Mastery Boost", type: "CPS", cost: 5000, effect: 200 },
+      { name: "Legendary Training", type: "CPS", cost: 15000, effect: 500 },
+    ]
+  },
+  {
+    name: "🔴 Kai",
+    unlock: 10000,
+    multiplier: 5,
+    upgrades: [
+      { name: "Flame Punch", type: "CPC", cost: 20000, effect: 100 },
+      { name: "Blazing Katana", type: "CPC", cost: 50000, effect: 250 },
+      { name: "Firestorm Fury", type: "CPC", cost: 100000, effect: 500 },
+      { name: "Lava Boost", type: "CPS", cost: 150000, effect: 1000 },
+      { name: "Phoenix Rage", type: "CPS", cost: 500000, effect: 3000 },
+    ]
+  },
+  {
+    name: "🔵 Jay",
+    unlock: 100000,
+    multiplier: 10,
+    upgrades: [
+      { name: "Lightning Jolt", type: "CPC", cost: 250000, effect: 750 },
+      { name: "Shock Staff", type: "CPC", cost: 500000, effect: 1500 },
+      { name: "Thunder Slam", type: "CPC", cost: 1000000, effect: 3000 },
+      { name: "Electric Storm", type: "CPS", cost: 3000000, effect: 7500 },
+    ]
+  },
+  {
+    name: "⚪ Zane",
+    unlock: 500000,
+    multiplier: 20,
+    upgrades: [
+      { name: "Ice Surge", type: "CPC", cost: 750000, effect: 2000 },
+      { name: "Shuriken Barrage", type: "CPC", cost: 2000000, effect: 4000 },
+      { name: "Freeze Protocol", type: "CPS", cost: 5000000, effect: 10000 },
+      { name: "Titanium Core", type: "CPS", cost: 10000000, effect: 25000 },
+    ]
+  },
+  {
+    name: "⚫ Cole",
+    unlock: 1000000,
+    multiplier: 50,
+    upgrades: [
+      { name: "Earthquake Punch", type: "CPC", cost: 2000000, effect: 5000 },
+      { name: "Rhythmic Smash", type: "CPC", cost: 5000000, effect: 10000 },
+      { name: "Rockslide Charge", type: "CPS", cost: 15000000, effect: 30000 },
+      { name: "Solid Stone Style", type: "CPS", cost: 30000000, effect: 75000 },
+    ]
+  }
+];
+
+function format(n) {
+  return n.toLocaleString("en-US");
+}
+
+function updateDisplay() {
+  document.getElementById("chi").innerText = format(chi);
+  document.getElementById("cpc").innerText = format(cpc);
+  document.getElementById("cps").innerText = format(cps);
+  document.getElementById("ninjaName").innerText = ninjas[currentNinja].name;
+  const upgDiv = document.getElementById("upgrades");
+  upgDiv.innerHTML = "";
+  const ninja = ninjas[currentNinja];
+  if (chi >= ninja.unlock) {
+    ninja.upgrades.forEach((upg, idx) => {
+      const btn = document.createElement("div");
+      btn.className = "upgrade";
+      btn.onclick = () => buyUpgrade(currentNinja, idx);
+      btn.innerHTML = `<strong>${upg.name}</strong><br>Type: ${upg.type}, +${format(upg.effect)}<br>Cost: ${format(upg.cost)} Chi`;
+      upgDiv.appendChild(btn);
+    });
+  } else {
+    upgDiv.innerHTML = `<p>🔒 Unlocks at ${format(ninja.unlock)} Chi!</p>`;
+  }
+}
+
+function clickNinja() {
+  const mult = ninjas[currentNinja].multiplier;
+  chi += cpc * mult;
+  updateDisplay();
+}
+
+function buyUpgrade(nIndex, uIndex) {
+  const upg = ninjas[nIndex].upgrades[uIndex];
+  if (chi >= upg.cost) {
+    chi -= upg.cost;
+    if (upg.type === "CPC") cpc += upg.effect;
+    if (upg.type === "CPS") cps += upg.effect;
+    upg.effect = Math.floor(upg.effect * 1.5);
+    upg.cost = Math.floor(upg.cost * 1.5);
+    updateDisplay();
+  }
+}
+
+function nextNinja() {
+  if (currentNinja < ninjas.length - 1) currentNinja++;
+  updateDisplay();
+}
+
+function prevNinja() {
+  if (currentNinja > 0) currentNinja--;
+  updateDisplay();
+}
+
+setInterval(() => {
+  chi += cps;
+  updateDisplay();
+}, 1000);
+
+// Easter Eggs
+const konamiCode = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+let konamiBuffer = [];
+
+document.addEventListener("keydown", (e) => {
+  konamiBuffer.push(e.key);
+  if (konamiBuffer.length > konamiCode.length) konamiBuffer.shift();
+  if (JSON.stringify(konamiBuffer) === JSON.stringify(konamiCode)) {
+    if (!ninjas.some(n => n.name === "🌈 Oni Ninja")) {
+      ninjas.push({
+        name: "🌈 Oni Ninja",
+        unlock: 0,
+        multiplier: 999,
+        upgrades: [
+          { name: "Oni Storm", type: "CPC", cost: 1, effect: 99999 },
+          { name: "Dark Chi Surge", type: "CPS", cost: 10, effect: 50000 }
+        ]
+      });
+      alert("🌈 You unlocked the secret ninja: Oni Ninja!");
+      currentNinja = ninjas.length - 1;
+      updateDisplay();
+    }
+  }
+
+  if ((e.key === "z" || e.key === "Z") && chi === 0) {
+    chi += 100;
+    cpc += 1;
+    alert("💥 Secret boost: +100 Chi, +1 CPC!");
+    updateDisplay();
+  }
+});
+
+function countNinjaClicks() {
+  ninjaClickCount++;
+  if (ninjaClickCount === 50) {
+    chi += 5000;
+    cpc += 50;
+    cps += 50;
+    alert("😎 50 Click Combo! Power Unleashed!");
+    ninjaClickCount = 0;
+    updateDisplay();
+  }
+}
+
+updateDisplay();
+</script>
+</body>
+</html>
